@@ -975,7 +975,7 @@ async function collectStatus(state, logger) {
     lastError: state.lastError ?? null,
     login: { source: 'none', expiresAt: 0, valid: false },
     daily: null,
-    wallet: null,
+    credits: null,
   }
 
   const oauth = state.oauth
@@ -993,7 +993,13 @@ async function collectStatus(state, logger) {
     const keys = ensureKeys(state)
     const { summary } = await fetchSummary(state, keys, accessToken)
     doc.daily = dailyStateOf(summary)
-    if (summary?.wallet !== undefined) doc.wallet = summary.wallet
+    // 上游把余额放在 `credits: { available, reserved }`，不是 `wallet`。
+    if (summary?.credits !== undefined && summary.credits !== null) {
+      doc.credits = {
+        available: Number(summary.credits.available) || 0,
+        reserved: Number(summary.credits.reserved) || 0,
+      }
+    }
   } catch (error) {
     doc.upstreamError = error?.message || String(error)
   }

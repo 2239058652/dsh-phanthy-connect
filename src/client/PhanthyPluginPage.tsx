@@ -53,8 +53,7 @@ function PhanthyPageBody({ t, controller }: { t: Translate; controller: PhanthyC
     )
   }
 
-  const wallet = status.wallet
-  const points = wallet?.availablePoints ?? wallet?.balancePoints ?? wallet?.accountBalancePoints
+  const points = status.credits?.available
   const daily = status.daily
   const claimedToday = daily?.status === 'granted_today'
   const loginLabel = status.login.source === 'plugin'

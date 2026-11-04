@@ -23,11 +23,10 @@ export interface PhanthyDaily {
   streakDay: number
 }
 
-export interface PhanthyWallet {
-  availablePoints?: number
-  balancePoints?: number
-  accountBalancePoints?: number
-  reservedPoints?: number
+/** 上游 `activities/summary` 的 `credits`：可用与已占用积分。 */
+export interface PhanthyCredits {
+  available: number
+  reserved: number
 }
 
 export interface PhanthyStatus {
@@ -39,7 +38,7 @@ export interface PhanthyStatus {
   lastError: string | null
   login: PhanthyLogin
   daily: PhanthyDaily | null
-  wallet: PhanthyWallet | null
+  credits: PhanthyCredits | null
   /** 上游读失败时的原因；其余字段仍然可用。 */
   upstreamError?: string
 }
