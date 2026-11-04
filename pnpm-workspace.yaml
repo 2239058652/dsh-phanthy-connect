@@ -1,0 +1,7 @@
+packages:
+  - .
+
+# DSH 的插件加载器按 Node 的经典目录规则解析 `lib/client.js` 的 require，
+# 而 tsdown 自身又依赖 pnpm 的隔离布局。`hoisted` 让两者都能解析到，
+# 也是这个 profile 里其它插件统一使用的布局（见 ~/.dsh/profiles/web）。
+nodeLinker: hoisted

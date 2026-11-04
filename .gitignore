@@ -1,0 +1,15 @@
+# 依赖
+node_modules/
+
+# 构建中间产物（lib/ 是发布产物，随仓库提交）
+*.tsbuildinfo
+
+# 本地状态与凭证（插件从不写入仓库，但防止误提交）
+.phanthy/
+.tmp-state/
+*.log
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store

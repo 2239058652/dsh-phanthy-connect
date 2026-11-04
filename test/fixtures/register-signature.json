@@ -1,0 +1,4 @@
+{
+  "_comment": "x-desktop-signature from the original capture. The sanitised proxy log redacted this header together with the bearer tokens, so it is preserved here. It is not a secret: it is a one-off Ed25519 proof bound to the timestamp and nonce below, both long expired. Everything else the replay needs (body, public keys, device_signature, timestamp, nonce, idempotency key) still lives in _analysis/proxy-capture.jsonl.",
+  "xDesktopSignature": "fMg6XGP3867IbxtDVsKSq59k8Un-IWh9YHBLzS-A0uZwuG_sYc3lBwN2QO4ss1LEq8eh9-Zka_Rp6MO90gRlCw"
+}
