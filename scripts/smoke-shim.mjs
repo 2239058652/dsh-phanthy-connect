@@ -1,37 +1,28 @@
 /**
  * Live smoke test for the plugin's shim, independent of DSH.
  *
- * Boots the real shim with the installation identity created during protocol
- * discovery, then speaks to it exactly as pi-ai will: an Anthropic Messages
- * body with the per-process secret in `x-api-key`. A 200 here proves the whole
- * chain -- gateway auth, session exchange, proof signing, upstream forwarding.
+ * Boots the real shim with the plugin's own installed identity, then speaks to
+ * it exactly as pi-ai will: an Anthropic Messages body with the per-process
+ * secret in `x-api-key`. A 200 here proves the whole chain -- gateway auth,
+ * session exchange, proof signing, device header, upstream forwarding.
+ *
+ * Requires the plugin to have run at least once (so `$DSH_HOME/phanthy/state.json`
+ * exists and the installation is registered).
  *
  * Spends a little credit, so it is not part of the offline suite.
  *
  *   node scripts/smoke-shim.mjs [model]
  */
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { createShim, __internals } from '../index.js'
 
-import { createShim } from '../index.js'
-
-const here = path.dirname(fileURLToPath(import.meta.url))
-const identityFile = path.resolve(here, '..', '..', '_analysis', 'dsh-direct-identity.json')
-
-if (!fs.existsSync(identityFile)) {
-  console.error(`no identity at ${identityFile} -- run _analysis/phanthy-direct-client.js first`)
+const state = __internals.loadState()
+if (!state.installationPrivateKeyPem) {
+  console.error(`还没有安装身份（${__internals.stateFile()}）。先启动一次 DSH 让插件初始化，或跑 /phanthy login。`)
   process.exit(1)
 }
-
-const saved = JSON.parse(fs.readFileSync(identityFile, 'utf8'))
-const state = {
-  ...saved,
-  registeredAt: Date.now(),
-  accountScope: null,
-  models: [],
-  lastSyncAt: 0,
-  lastError: null,
+if (!state.oauth?.accessToken && __internals.readOfficialAccessToken() === null) {
+  console.error('没有可用登录态。跑 /phanthy login，或先用官方客户端登录一次。')
+  process.exit(1)
 }
 
 const logger = { info: console.log, warn: console.warn, debug: () => {} }

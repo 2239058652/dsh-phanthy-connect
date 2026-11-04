@@ -715,6 +715,20 @@ export async function claimDaily(state, keys, accessToken, serverDate, logger) {
   return payload
 }
 
+/**
+ * 客户端标识（`x-phanthy-cli-device`）。
+ *
+ * 官方客户端会把这个头写成「平台 + 架构 + 系统版本 + 内网 IP 候选」的完整指纹。
+ * 实测上游只用它填用量记录的 OS 列，且**只读 `platform` 就够**：只发这一个字段，
+ * 用量页的 OS 列照样显示 Windows。所以这里刻意只报平台，不上报 IP、架构和系统
+ * 版本——那些对我们的使用没有帮助，只是多泄露一份设备信息。
+ */
+export function deviceHeader() {
+  const platform = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'macos' : 'linux'
+  const payload = { version: 1, platform, cliVersion: APP_VERSION }
+  return { 'x-phanthy-cli-device': b64url(Buffer.from(JSON.stringify(payload), 'utf8')) }
+}
+
 /** 推理证明头。签名覆盖 body 与 authorization 的哈希。 */
 function proofHeaders({ method, pathname, body, authorization, session, keys }) {
   const ts = String(Date.now())
@@ -725,6 +739,7 @@ function proofHeaders({ method, pathname, body, authorization, session, keys }) 
     'x-phanthy-proof-timestamp': ts,
     'x-phanthy-proof-nonce': non,
     'x-phanthy-proof-signature': b64url(crypto.sign(null, Buffer.from(message, 'utf8'), keys.inference.privateKey)),
+    ...deviceHeader(),
   }
 }
 
