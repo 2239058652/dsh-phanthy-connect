@@ -1393,6 +1393,11 @@ export function apply(ctx, config = {}) {
       }
     } catch (error) {
       state.lastError = error?.message || String(error)
+      // 诊断用：只留 message 时，像 `next is not a function` 这种在依赖里
+      // 抛出的错误看不出位置。存下前几行堆栈，重启后可从 state.json 读。
+      state.lastErrorStack = typeof error?.stack === 'string'
+        ? error.stack.split('\n').slice(0, 8).join('\n')
+        : null
       saveState(state)
       logger?.warn?.(`dsh-phanthy: 同步失败 ${state.lastError}`)
     }

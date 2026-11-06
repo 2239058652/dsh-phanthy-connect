@@ -147,6 +147,44 @@ pnpm add link:<本仓库路径>/dsh-phanthy-connect
 - **依赖上游未公开的内部端点**：`desktop-installations/register` 与 `activities/summary` 都不是公开 API，PhanthyCode 改版可能导致失效。届时 `/phanthy status` 会显示具体错误。
 - **账号上会留下安装记录**：这是协议本身要求的，第一次启动就会创建一条。
 
+## 故障排查
+
+插件自身出问题时，错误和堆栈会写进 `$DSH_HOME/phanthy/state.json` 的 `lastError` / `lastErrorStack` 两个字段：
+
+```powershell
+node -e "const j=require(process.env.USERPROFILE+'/.dsh/phanthy/state.json'); console.log(j.lastError); console.log(j.lastErrorStack)"
+```
+
+### 症状：模型选择器里能选 Phanthy，但一发消息就 `Connection error.`（TRANSPORT）
+
+先看 `lastError`：
+
+- **是 `next is not a function`** → 不是本插件的问题，是**别的插件在 cordis 的 `internal/update` 链上抛错**，导致本插件写路由失败，`baseURL` 停留在上次启动的端口。
+  已知案例：`dsh-ops@0.4.4` 在 DSH 0.2.2（cordis 4.1）上必崩——cordis 4.1 给 `internal/update` 传 4 个参数 `(fiber, event, resolved, next)`，而它按 3 个参数 `(config, noSave, next)` 接收，把 `resolved` 当成了 `next`。
+
+  处理：让宿主跳过那个插件（比手动改 `bundles` 更干净——插件将来兼容新版本时会自动恢复）。例如把 `dsh-ops` 的 `engines.dsh` 保持在它发布时的原值 `<0.2.2-0`，DSH 就会判定不兼容并跳过加载：
+
+  ```json
+  // ~/.dsh/profiles/web/node_modules/dsh-ops/package.json
+  "engines": { "dsh": ">=0.2.0-rc.2 <0.2.2-0" }
+  ```
+
+  上游修复方式是把它那行监听器改成兼容两种签名：
+
+  ```js
+  ctx.on('internal/update', async (...args) => {
+      const next = args.at(-1);
+      try { return typeof next === 'function' ? await next() : undefined; }
+      finally { refresh(); }
+  }, { global: true, prepend: true });
+  ```
+
+- **是别的错误** → 按 `lastErrorStack` 里的位置判断；如果是宿主 API 变更导致的，本插件可能需要跟进适配。
+
+### 症状：`/phanthy status` 显示「已过期」
+
+`refresh_token` 失效。重跑 `/phanthy login`，只需要浏览器，不需要任何客户端。
+
 ## 安全边界
 
 - 安装私钥与 OAuth 令牌都存在 `$DSH_HOME/phanthy/state.json`，权限 0600，**未加密**。前者等价于该账号的桌面端使用凭证，后者等价于账号登录态，请按密钥对待。
